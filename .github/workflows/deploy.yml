@@ -1,0 +1,72 @@
+Here is a GitHub Actions CI/CD pipeline script in YAML format:
+
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Start Flask Application
+      run: python app.py &
+
+    - name: Setup Java
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'adopt'
+        java-version: '11'
+
+    - name: Build with Maven
+      run: mvn clean install
+
+    - name: Copy JAR to EC2
+      run: |
+        scp -i ${{ secrets.SSH_PRIVATE_KEY }} target/my-app-1.0-SNAPSHOT.jar ubuntu@${{ secrets.EC2_IP }}:/home/ubuntu
+        ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ubuntu@${{ secrets.EC2_IP }} 'sudo systemctl restart my-app'
+
+    - name: Run Tests
+      run: mvn test
+
+    - name: Cleanup
+      run: terraform destroy -auto-approve
+```
+
+This script is a basic example and may need to be adjusted based on your specific application and infrastructure. It assumes that you have a Java application built with Maven and that you are using an SSH key to connect to your EC2 instance. It also assumes that you have a Python Flask application that is started with `python app.py`.
